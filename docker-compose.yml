@@ -1,15 +1,25 @@
+# Só o gateway publica porta. Os serviços e os bancos ficam na rede interna do Docker.
+x-servico: &servico
+  env_file: .env
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 services:
-  helpdesk:
-    build: .
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
     ports:
       - "127.0.0.1:8000:8000"   # só acessível pelo próprio computador
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
-    volumes:
-      - dados:/dados
+    depends_on:
+      - usuarios
+      - inventario
+      - chamados
     read_only: true
     tmpfs:
       - /tmp
@@ -18,5 +28,37 @@ services:
     cap_drop:
       - ALL
 
+  usuarios:
+    <<: *servico
+    build: ./usuarios
+    environment:
+      DATABASE_URL: sqlite:////dados/usuarios.db
+      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+    volumes:
+      - usuarios_dados:/dados
+
+  inventario:
+    <<: *servico
+    build: ./inventario
+    environment:
+      DATABASE_URL: sqlite:////dados/inventario.db
+      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+    volumes:
+      - inventario_dados:/dados
+
+  chamados:
+    <<: *servico
+    build: ./chamados
+    environment:
+      DATABASE_URL: sqlite:////dados/chamados.db
+      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+      USUARIOS_URL: http://usuarios:8000
+      INVENTARIO_URL: http://inventario:8000
+      TIMEOUT_SEGUNDOS: "3"
+    volumes:
+      - chamados_dados:/dados
+
 volumes:
-  dados:
+  usuarios_dados:
+  inventario_dados:
+  chamados_dados:
