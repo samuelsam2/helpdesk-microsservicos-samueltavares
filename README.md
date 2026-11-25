@@ -1,6 +1,6 @@
 # HelpDesk TI — microsserviços
 
-> 🎥 **Vídeo de demonstração:** COLE-AQUI-O-LINK-DO-VIDEO
+> 🎥 **Vídeo de demonstração:** https://youtu.be/nrU6M1VooqE
 
 Sistema de chamados de TI separado em quatro serviços (Usuários, Inventário, Chamados e Notificações) atrás de um API Gateway, com uma fila de eventos (Redis).
 Atividade de Arquitetura de Software (Prof. Filipe Cavalcante) — aluno: Samuel Tavares.
