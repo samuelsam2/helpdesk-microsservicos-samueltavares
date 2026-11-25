@@ -1,13 +1,35 @@
-"""Aviso de eventos. BÔNUS: por enquanto só registra no log.
+"""Publica eventos (ChamadoAberto, ChamadoAtribuido, ChamadoResolvido) na fila do Redis.
 
-Quando o serviço de Notificações existir, aqui o chamado publica o evento
-(ChamadoAberto, ChamadoAtribuido, ChamadoResolvido) em uma fila (Redis/RabbitMQ)
-em vez de só escrever no log.
+Quem transforma o evento em aviso para o usuário é o serviço de Notificações.
+Regra importante: se a fila ou o serviço de Notificações estiver fora do ar, o chamado
+continua funcionando. Só registramos um aviso no log e seguimos.
 """
+import json
 import logging
+from datetime import datetime
+
+import redis
+
+from app.config import FILA_EVENTOS, REDIS_URL
 
 log = logging.getLogger("helpdesk.chamados")
 
+_cliente = None
+
+
+def _obter_cliente():
+    global _cliente
+    if _cliente is None:
+        # timeouts curtos: com o Redis fora do ar, não podemos deixar o chamado esperando
+        _cliente = redis.Redis.from_url(REDIS_URL, socket_connect_timeout=1, socket_timeout=1)
+    return _cliente
+
 
 def notificar(evento: str, usuario_id: int, mensagem: str) -> None:
-    log.info("evento=%s usuario=%s mensagem=%s", evento, usuario_id, mensagem)
+    corpo = json.dumps(
+        {"tipo": evento, "destinatario_id": usuario_id, "mensagem": mensagem, "criada_em": datetime.now().isoformat()}
+    )
+    try:
+        _obter_cliente().lpush(FILA_EVENTOS, corpo)
+    except redis.RedisError as erro:
+        log.warning("Fila indisponível, evento %s não publicado: %s", evento, erro)

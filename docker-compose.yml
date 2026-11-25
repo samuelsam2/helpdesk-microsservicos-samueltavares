@@ -20,6 +20,7 @@ services:
       - usuarios
       - inventario
       - chamados
+      - notificacoes
     read_only: true
     tmpfs:
       - /tmp
@@ -55,10 +56,37 @@ services:
       USUARIOS_URL: http://usuarios:8000
       INVENTARIO_URL: http://inventario:8000
       TIMEOUT_SEGUNDOS: "3"
+      REDIS_URL: redis://redis:6379/0
     volumes:
       - chamados_dados:/dados
+    # Chamados NÃO espera o Redis nem as Notificações: se estiverem fora do ar, o chamado abre do mesmo jeito.
+
+  # BÔNUS: serviço de Notificações. Lê os eventos da fila e guarda os avisos no banco dele.
+  notificacoes:
+    <<: *servico
+    build: ./notificacoes
+    environment:
+      DATABASE_URL: sqlite:////dados/notificacoes.db
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - notificacoes_dados:/dados
+
+  # BÔNUS: fila de eventos. Fica só na rede interna (nenhuma porta publicada).
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", ""]
+    user: redis
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - redis_dados:/data
 
 volumes:
   usuarios_dados:
   inventario_dados:
   chamados_dados:
+  notificacoes_dados:
+  redis_dados:

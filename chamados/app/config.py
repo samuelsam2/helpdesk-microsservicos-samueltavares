@@ -21,3 +21,7 @@ DOCS_ATIVA = os.getenv("DOCS", "0") == "1"
 USUARIOS_URL = os.getenv("USUARIOS_URL", "http://usuarios:8000")
 INVENTARIO_URL = os.getenv("INVENTARIO_URL", "http://inventario:8000")
 TIMEOUT_SEGUNDOS = float(os.getenv("TIMEOUT_SEGUNDOS", "3"))
+
+# Fila de eventos (Redis). Chamados só escreve nela; quem lê é o serviço de Notificações.
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+FILA_EVENTOS = os.getenv("FILA_EVENTOS", "eventos_chamados")

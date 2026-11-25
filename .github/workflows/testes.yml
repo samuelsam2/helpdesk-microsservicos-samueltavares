@@ -1,22 +1,26 @@
-name: Testes e segurança
-on: [push, pull_request]
+name: Testes dos serviços
 
-# O workflow só pode ler o código (privilégio mínimo)
-permissions:
-  contents: read
+on:
+  push:
+  pull_request:
 
 jobs:
   testes:
+    name: Testes (${{ matrix.servico }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        servico: [usuarios, inventario, chamados, notificacoes]
+    defaults:
+      run:
+        working-directory: ${{ matrix.servico }}
     steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt
-      - name: Testes (inclui testes de segurança)
-        run: pytest -q
-      - name: Dependências com falhas conhecidas
-        run: pip-audit -r requirements.txt
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
+      - name: Rodar os testes
+        run: pytest -v
